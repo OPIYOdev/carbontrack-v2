@@ -4,8 +4,11 @@ import { Chart } from 'chart.js/auto'
 import { useFleet } from '../FleetContext'
 import {
   calcFleetEconomics, calcTCO,
+  calcFuelSaving,
   VEHICLE_CAPITAL,
+  MAINTENANCE_MONTHLY,
   fmtKES,
+  fmtKESFull,
 } from '../utils/carbonEconomics'
 
 const VEHICLE_TYPES = ['matatu', 'county-car', 'lorry', 'boda-boda', 'bus']
