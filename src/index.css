@@ -1,0 +1,182 @@
+/* src/index.css */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green-50: #EAF3DE;
+  --green-100: #C0DD97;
+  --green-200: #97C459;
+  --green-400: #639922;
+  --green-600: #3B6D11;
+  --green-800: #27500A;
+  --green-900: #173404;
+
+  --amber-50: #FAEEDA;
+  --amber-100: #FAC775;
+  --amber-600: #854F0B;
+  --amber-800: #633806;
+
+  --red-50: #FCEBEB;
+  --red-100: #F7C1C1;
+  --red-600: #A32D2D;
+  --red-800: #791F1F;
+
+  --blue-50: #E6F1FB;
+  --blue-100: #B5D4F4;
+  --blue-600: #185FA5;
+  --blue-800: #0C447C;
+
+  --gray-50: #F1EFE8;
+  --gray-100: #D3D1C7;
+  --gray-400: #888780;
+  --gray-600: #5F5E5A;
+  --gray-800: #444441;
+  --gray-900: #2C2C2A;
+
+  --surface: #ffffff;
+  --surface-2: #F7F6F2;
+  --surface-3: #F1EFE8;
+  --border: rgba(0,0,0,0.10);
+  --border-md: rgba(0,0,0,0.18);
+  --text-1: #1a1a18;
+  --text-2: #5F5E5A;
+  --text-3: #888780;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --font: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #1e1e1c;
+    --surface-2: #272724;
+    --surface-3: #2e2e2b;
+    --border: rgba(255,255,255,0.10);
+    --border-md: rgba(255,255,255,0.18);
+    --text-1: #f0ede6;
+    --text-2: #a8a69e;
+    --text-3: #6e6d66;
+    --green-50: #173404;
+    --green-100: #27500A;
+    --green-800: #C0DD97;
+    --green-900: #EAF3DE;
+    --amber-50: #412402;
+    --amber-100: #633806;
+    --amber-800: #FAC775;
+    --blue-50: #042C53;
+    --blue-100: #0C447C;
+    --blue-800: #B5D4F4;
+    --red-50: #501313;
+    --red-100: #791F1F;
+    --red-800: #F7C1C1;
+  }
+}
+
+body {
+  font-family: var(--font);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+h1 { font-size: 20px; font-weight: 600; }
+h2 { font-size: 16px; font-weight: 600; }
+h3 { font-size: 14px; font-weight: 600; }
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: var(--font);
+}
+
+.card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border-md);
+  background: var(--surface);
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.12s;
+}
+.btn:hover { background: var(--surface-3); }
+.btn-primary {
+  background: var(--green-600);
+  color: var(--green-50);
+  border-color: var(--green-600);
+}
+.btn-primary:hover { background: var(--green-800); }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.tag-green { background: var(--green-50); color: var(--green-800); }
+.tag-amber { background: var(--amber-50); color: var(--amber-800); }
+.tag-red { background: var(--red-50); color: var(--red-800); }
+.tag-blue { background: var(--blue-50); color: var(--blue-800); }
+.tag-gray { background: var(--surface-3); color: var(--text-2); }
+
+.alert {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.alert-info { background: var(--blue-50); color: var(--blue-800); border: 0.5px solid var(--blue-100); }
+.alert-warn { background: var(--amber-50); color: var(--amber-800); border: 0.5px solid var(--amber-100); }
+.alert-danger { background: var(--red-50); color: var(--red-800); border: 0.5px solid var(--red-100); }
+.alert-success { background: var(--green-50); color: var(--green-800); border: 0.5px solid var(--green-100); }
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 0.5px solid var(--border-md);
+  white-space: nowrap;
+}
+td {
+  padding: 7px 10px;
+  font-size: 12px;
+  border-bottom: 0.5px solid var(--border);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+
+.mono { font-family: var(--font-mono); }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--green-100);
+  border-top-color: var(--green-600);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
