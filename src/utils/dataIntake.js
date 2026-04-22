@@ -14,7 +14,7 @@ import { EMISSION_FACTORS } from '../data/fleet'
 function normalizeHeader(raw) {
   return String(raw ?? '')
     .toLowerCase()
-    .replace(/[()[\]{}]/g, '')          // strip brackets
+    .replace(/[()[\]{}⚠₂]/g, '')        // strip brackets and special chars
     .replace(/[^a-z0-9]+/g, '_')        // non-alphanumeric → underscore
     .replace(/^_+|_+$/g, '')            // trim leading/trailing underscores
     .replace(/_+/g, '_')                // collapse consecutive underscores
@@ -364,28 +364,44 @@ function validateRow(row, rowNum) {
 
 const WORKING_DAYS = 25
 
+// Helper to get field value by canonical key or any of its aliases
+function getField(raw, canonical) {
+  // 1. Direct canonical hit
+  if (raw[canonical] !== undefined && raw[canonical] !== null) return raw[canonical]
+  
+  // 2. Scan all aliases
+  const aliases = HEADER_ALIASES[canonical] || []
+  for (const alias of aliases) {
+    const normAlias = normalizeHeader(alias)
+    if (raw[normAlias] !== undefined && raw[normAlias] !== null) return raw[normAlias]
+  }
+
+  // 3. Reverse ALIAS_MAP scan for unmapped headers
+  for (const [key, val] of Object.entries(raw)) {
+    if (ALIAS_MAP[key] === canonical) return val
+  }
+  
+  return null
+}
+
 function normalizeRow(raw, idx) {
-  // Helper to get field value by canonical key or any of its aliases
-  const getField = (canonical) => {
-    if (raw[canonical] !== undefined && raw[canonical] !== null) return raw[canonical]
-    const aliases = HEADER_ALIASES[canonical] || []
-    for (const alias of aliases) {
-      const normAlias = normalizeHeader(alias)
-      if (raw[normAlias] !== undefined && raw[normAlias] !== null) return raw[normAlias]
-    }
-    return null
+  // Detection for footer rows: no km_per_day AND any cell contains >80 characters of text
+  const kmPerDayRaw = getField(raw, 'km_per_day')
+  if (kmPerDayRaw === null || kmPerDayRaw === '') {
+    const hasLongText = Object.values(raw).some(v => typeof v === 'string' && v.length > 80)
+    if (hasLongText) return { _isFooter: true }
   }
 
   // Coerce all numeric fields precisely
-  const kmPerDay    = toNumber(getField('km_per_day'))
-  const kmPerLitre  = toNumber(getField('km_per_litre'))
-  const litresRaw   = toNumber(getField('litres_per_day'))
-  const age         = toInt(getField('age'))
-  const seats       = toInt(getField('seats'))
+  const kmPerDay    = toNumber(kmPerDayRaw)
+  const kmPerLitre  = toNumber(getField(raw, 'km_per_litre'))
+  const litresRaw   = toNumber(getField(raw, 'litres_per_day'))
+  const age         = toInt(getField(raw, 'age'))
+  const seats       = toInt(getField(raw, 'seats'))
 
-  const fuelRaw = getField('fuel_type')
+  const fuelRaw = getField(raw, 'fuel_type')
   const fuel    = normalizeFuel(fuelRaw)
-  const type    = normalizeType(getField('vehicle_type'))
+  const type    = normalizeType(getField(raw, 'vehicle_type'))
 
   // Litres per day: use explicit value if present, else derive from km ÷ efficiency
   // Use an efficiency default based on vehicle type if km_per_litre is missing
@@ -397,8 +413,8 @@ function normalizeRow(raw, idx) {
     ? calcEmission(litresPerDay, fuel, WORKING_DAYS)
     : { emPerDay: 0, emPerMonth: 0, emPerYear: 0 }
 
-  const id  = toString(getField('id'))  || toString(getField('reg')) || `U${String(idx + 1).padStart(3, '0')}`
-  const reg = toString(getField('reg')) || toString(getField('id'))  || `UPLOAD-${idx + 1}`
+  const id  = toString(getField(raw, 'id'))  || toString(getField(raw, 'reg')) || `U${String(idx + 1).padStart(3, '0')}`
+  const reg = toString(getField(raw, 'reg')) || toString(getField(raw, 'id'))  || `UPLOAD-${idx + 1}`
 
   return {
     id,
@@ -407,7 +423,7 @@ function normalizeRow(raw, idx) {
     fuel,
     fuelRaw: toString(fuelRaw),   // preserved for audit
     age:          age  ?? 0,
-    route:        toString(getField('route')) || 'Unknown',
+    route:        toString(getField(raw, 'route')) || 'Unknown',
     seats:        seats ?? 5,
     kmPerDay:     kmPerDay  ?? 0,
     kmPerLitre:   Math.round((kpl) * 10) / 10,
@@ -416,9 +432,9 @@ function normalizeRow(raw, idx) {
     emPerMonth,
     emPerYear,
     // Preserved from raw for driver/phone masking display
-    driver:    toString(getField('driver')),
-    phone:     toString(getField('phone')),
-    id_number: toString(getField('id_number')),
+    driver:    toString(getField(raw, 'driver')),
+    phone:     toString(getField(raw, 'phone')),
+    id_number: toString(getField(raw, 'id_number')),
     // Provenance
     sourceFile:  null,  // set by caller
     uploadedAt:  new Date().toISOString(),
@@ -474,8 +490,15 @@ function processParsedRows(rawRows, sourceFileName, extractLog) {
   })
 
   // Normalization + validation pass
+  let footerCount = 0
   maskedRows.forEach((row, idx) => {
     const normalized = normalizeRow(row, idx)
+    
+    if (normalized._isFooter) {
+      footerCount++
+      return
+    }
+
     normalized.sourceFile = sourceFileName
     normalized._masked    = row._wasMasked
 
@@ -492,6 +515,14 @@ function processParsedRows(rawRows, sourceFileName, extractLog) {
 
     results.processed.push(normalized)
   })
+
+  if (footerCount > 0) {
+    results.log.push({
+      step: 'extraction',
+      detail: `Skipped ${footerCount} footer/note row(s) based on content length`,
+      status: 'ok'
+    })
+  }
 
   results.log.push({
     step: 'validation',
