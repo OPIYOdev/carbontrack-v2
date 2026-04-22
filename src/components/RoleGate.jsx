@@ -5,13 +5,13 @@ export const ROLES = {
   fleet_manager: {
     label: 'Fleet Manager',
     description: 'Monitor vehicle emissions, identify hotspots, manage routes',
-    tabs: ['overview', 'fleet', 'calculator', 'intake', 'economics', 'workflow', 'ai'],
+    tabs: ['overview', 'fleet', 'calculator', 'intake', 'economics', 'workflow', 'ai', 'settings'],
     color: '#3B6D11', bg: '#EAF3DE', border: '#C0DD97',
   },
   compliance: {
     label: 'Compliance Officer',
     description: 'Track regulatory obligations, prepare EPRA reports, manage NDC progress',
-    tabs: ['overview', 'compliance', 'scenarios', 'economics', 'report', 'workflow', 'audit', 'ai'],
+    tabs: ['overview', 'compliance', 'scenarios', 'economics', 'report', 'workflow', 'audit', 'ai', 'settings'],
     color: '#185FA5', bg: '#E6F1FB', border: '#B5D4F4',
   },
   auditor: {

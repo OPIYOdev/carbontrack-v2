@@ -1,6 +1,6 @@
 // src/components/AIAnalyst.jsx — High-impact stakeholder dashboard
-import React, { useState } from 'react'
-import { FLEET, getFleetSummary } from '../data/fleet'
+import React, { useState, useMemo } from 'react'
+import { useFleet } from '../FleetContext'
 import { logEvent } from '../utils/auditTrail'
 import { addAction } from '../utils/actionStore'
 
@@ -19,41 +19,45 @@ const formatNum = (val) => {
   return num.toLocaleString();
 };
 
-export default function AIAnalyst({ role, uploadedFleet = [] }) {
+export default function AIAnalyst({ role }) {
+  const { activeFleet, fleetSummary: summary, uploadedFleet } = useFleet()
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [scenario, setScenario] = useState('')
 
-  const activeFleet = uploadedFleet.length > 0 ? uploadedFleet : FLEET
-  const summary = getFleetSummary()
-
-  const fleetSummary = {
+  const fleetSummaryPayload = useMemo(() => ({
     totalVehicles: activeFleet.length,
-    source: uploadedFleet.length > 0 ? 'user_uploaded' : 'synthetic_demo',
+    source: uploadedFleet ? 'user_uploaded' : 'synthetic_demo',
     byType: summary.byType,
-    totalMonthlyEmissions: summary.total,
-    totalAnnualEstimate: +(summary.total * 12).toFixed(2),
+    totalMonthlyEmissions: summary.totalMonthlyEmissions,
+    totalAnnualEstimate: +(summary.totalMonthlyEmissions * 12).toFixed(2),
     oldVehicles: activeFleet.filter((v) => v.age > 8).length,
     dieselVehicles: activeFleet.filter((v) => v.fuel === 'diesel').length,
-    avgAge: +(activeFleet.reduce((s, v) => s + v.age, 0) / activeFleet.length).toFixed(1),
-  }
+    avgAge: activeFleet.length > 0 ? +(activeFleet.reduce((s, v) => s + (v.age || 0), 0) / activeFleet.length).toFixed(1) : 0,
+  }), [activeFleet, summary, uploadedFleet])
 
-  const hotspots = summary.hotspots.map((v) => ({
+  const hotspotsPayload = useMemo(() => summary.hotspots.map((v) => ({
     id: v.id, type: v.type, fuel: v.fuel, age: v.age, route: v.route, emPerMonth: v.emPerMonth,
-  }))
+  })), [summary.hotspots])
 
   async function runAnalysis() {
     setLoading(true); setError(null); setResult(null)
     logEvent({ type: 'ai_analysis', actor: role, role, action: 'AI analysis requested',
-      detail: `Role: ${role}${scenario ? ' · Scenario: ' + scenario : ''} · Fleet: ${fleetSummary.totalVehicles} vehicles`,
+      detail: `Role: ${role}${scenario ? ' · Scenario: ' + scenario : ''} · Fleet: ${fleetSummaryPayload.totalVehicles} vehicles`,
       sourceRef: 'fleet_dataset' })
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fleetSummary, hotspots, totalEmissions: summary.total, scenario, role,
-          uploadedData: uploadedFleet.length > 0 ? uploadedFleet.slice(0, 20) : null }),
+        body: JSON.stringify({ 
+          fleetSummary: fleetSummaryPayload, 
+          hotspots: hotspotsPayload, 
+          totalEmissions: summary.totalMonthlyEmissions, 
+          scenario, 
+          role,
+          uploadedData: uploadedFleet ? uploadedFleet.slice(0, 20) : null 
+        }),
       })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error || `HTTP ${res.status}`) }
       const data = await res.json()
@@ -108,7 +112,7 @@ export default function AIAnalyst({ role, uploadedFleet = [] }) {
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
           <h2 style={{ marginBottom: '8px' }}>Ready to Analyze Fleet Performance</h2>
           <p style={{ color: 'var(--text-2)', marginBottom: '24px', maxWidth: '500px', margin: '0 auto 24px' }}>
-            Generate a high-level strategic report based on your current fleet data ({fleetSummary.totalVehicles} vehicles).
+            Generate a high-level strategic report based on your current fleet data ({fleetSummaryPayload.totalVehicles} vehicles).
           </p>
           <button className="btn btn-primary" onClick={runAnalysis} style={{ padding: '12px 32px', fontSize: '15px', fontWeight: 600 }}>
             Generate Strategic Report ↗

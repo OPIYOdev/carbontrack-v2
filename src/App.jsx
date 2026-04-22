@@ -1,14 +1,15 @@
 // src/App.jsx
 import React, { useState } from 'react'
+import { useFleet } from './FleetContext'
 import RoleGate, { ROLES } from './components/RoleGate'
 import Overview from './components/Overview'
 import FleetManager from './components/FleetManager'
 import Calculator from './components/Calculator'
 import DataIntake from './components/DataIntake'
 import AIAnalyst from './components/AIAnalyst'
-import ScenarioModeler from './components/ScenarioModeler'
-import Economics from './components/Economics'
+import ScenarioModeler from './components/ScenarioModelerimport AuditTrail from './components/AuditTrail'
 import PolicyReport from './components/PolicyReport'
+import Settings from './components/Settings'
 import KenyaComplianceCalculator from './components/KenyaComplianceCalculator'
 import ActionWorkflow from './components/ActionWorkflow'
 import AuditTrail from './components/AuditTrail'
@@ -25,6 +26,7 @@ const ALL_TABS = {
   audit:      { label: 'Audit Trail',   component: AuditTrail },
   report:     { label: 'Policy Report', component: PolicyReport },
   compliance: { label: 'Compliance',    component: KenyaComplianceCalculator },
+  settings:   { label: 'Settings',      component: Settings },
 }
 
 const S = {
@@ -49,7 +51,7 @@ const S = {
 export default function App() {
   const [role, setRole] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
-  const [uploadedFleet, setUploadedFleet] = useState([])
+  const { uploadedFleet, setUploadedFleet } = useFleet()
 
   if (!role) return <RoleGate onSelect={(r) => { setRole(r); setActiveTab(ROLES[r].tabs[0]) }} />
 
@@ -57,7 +59,7 @@ export default function App() {
   const visibleTabs = roleDef.tabs.filter((t) => ALL_TABS[t])
   const safeTab = visibleTabs.includes(activeTab) ? activeTab : visibleTabs[0]
   const ActiveComponent = ALL_TABS[safeTab]?.component || Overview
-  const props = { role, uploadedFleet, ...(safeTab === 'intake' ? { onDataLoaded: setUploadedFleet } : {}) }
+  const props = { role, uploadedFleet: uploadedFleet || [], ...(safeTab === 'intake' ? { onDataLoaded: setUploadedFleet } : {}) }
 
   return (
     <div style={S.app}>
@@ -76,7 +78,7 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {uploadedFleet.length > 0 && (
+          {uploadedFleet && uploadedFleet.length > 0 && (
             <span style={S.badge('#27500A','#EAF3DE','#C0DD97')}>{uploadedFleet.length} vehicles uploaded</span>
           )}
           <span style={S.badge('#27500A','#EAF3DE','#C0DD97')}>NDC 3.0</span>

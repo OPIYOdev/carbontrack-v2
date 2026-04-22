@@ -1,17 +1,21 @@
 // src/components/PolicyReport.jsx
-import React from 'react'
-import { FLEET, NDC } from '../data/fleet'
+import React, { useMemo } from 'react'
+import { useFleet } from '../FleetContext'
+import { NDC } from '../data/fleet'
 import { calcScenarios, ndcGapAnalysis } from '../utils/emissions'
 
-const totalMonthly = FLEET.reduce((s, v) => s + v.emPerMonth, 0)
-const totalAnnual = +(totalMonthly * 12).toFixed(2)
-const scenarios = calcScenarios(totalMonthly)
-const ndcInfo = ndcGapAnalysis(totalAnnual)
-const today = new Date().toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })
-const highEmitters = FLEET.filter((v) => v.age > 8).length
-const dieselCount = FLEET.filter((v) => v.fuel === 'diesel').length
-
 export default function PolicyReport() {
+  const { activeFleet, fleetSummary } = useFleet()
+  const { totalMonthlyEmissions: totalMonthly, count, isDemo } = fleetSummary
+  const totalAnnual = +(totalMonthly * 12).toFixed(2)
+  
+  const scenarios = useMemo(() => calcScenarios(totalMonthly), [totalMonthly])
+  const ndcInfo = useMemo(() => ndcGapAnalysis(totalAnnual), [totalAnnual])
+  
+  const today = new Date().toLocaleDateString('en-KE', { year: 'numeric', month: 'long', day: 'numeric' })
+  const highEmitters = activeFleet.filter((v) => v.age > 8).length
+  const dieselCount = activeFleet.filter((v) => v.fuel === 'diesel').length
+  const petrolCount = activeFleet.filter((v) => v.fuel === 'petrol').length
   const handlePrint = () => window.print()
 
   return (
@@ -56,7 +60,7 @@ export default function PolicyReport() {
             Executive Summary
           </h3>
           <p style={{ fontSize: '13px', lineHeight: 1.8, color: 'var(--text-1)' }}>
-            This report presents the emission account for a {FLEET.length}-vehicle institutional fleet over a
+            This report presents the emission account for a {count}-vehicle institutional fleet over a
             reference period of one month. Total fleet emissions are estimated at{' '}
             <strong>{totalMonthly.toFixed(2)} tCO₂eq/month</strong> (
             <strong>{totalAnnual} tCO₂eq/year</strong>), computed using IPCC Tier 1 emission factors as applied
@@ -95,8 +99,8 @@ export default function PolicyReport() {
             </thead>
             <tbody>
               {[
-                ['Total vehicles', `${FLEET.length}`, 'Pilot fleet dataset'],
-                ['Petrol vehicles', `${FLEET.filter(v=>v.fuel==='petrol').length}`, 'Fleet register'],
+                ['Total vehicles', `${count}`, isDemo ? 'Pilot fleet dataset' : 'Institutional uploaded fleet'],
+                ['Petrol vehicles', `${petrolCount}`, 'Fleet register'],
                 ['Diesel vehicles', `${dieselCount}`, 'Fleet register'],
                 ['Vehicles >8 years (high-emitter risk)', `${highEmitters}`, 'GIZ fleet age penalty study'],
                 ['Total monthly emissions', `${totalMonthly.toFixed(3)} tCO₂eq`, 'IPCC Tier 1 calculation'],
@@ -190,8 +194,7 @@ export default function PolicyReport() {
       </div>
 
       <p style={{ fontSize: '11px', color: 'var(--text-3)' }}>
-        Use browser Print (Ctrl+P / Cmd+P) and "Save as PDF" to export. All data in this report is
-        based on synthetic demonstration data. Real deployment requires verified fleet records.
+        Use browser Print (Ctrl+P / Cmd+P) and "Save as PDF" to export. {isDemo ? 'All data in this report is based on synthetic demonstration data.' : 'This report is based on institutional uploaded fleet data.'} Real deployment requires verified fleet records.
       </p>
     </div>
   )
