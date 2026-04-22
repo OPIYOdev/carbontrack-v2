@@ -121,8 +121,9 @@ export const FINANCING_RATE_ANNUAL = 0.14  // 14% p.a.
  * @param {'conservative'|'mid'|'optimistic'} priceScenario
  * @returns {{ annualTonnes, kes_per_tonne, annual_kes, monthly_kes, usd_price }}
  */
-export function calcCarbonCreditRevenue(reductionMonthly, priceScenario = 'mid') {
-  const { vcm_conservative_usd, vcm_mid_usd, vcm_optimistic_usd, usd_to_kes } = MARKET_RATES.carbon_credit
+export function calcCarbonCreditRevenue(reductionMonthly, priceScenario = 'mid', customRates = null) {
+  const rates = customRates || MARKET_RATES
+  const { vcm_conservative_usd, vcm_mid_usd, vcm_optimistic_usd, usd_to_kes } = rates.carbon_credit
   const usdPrice = { conservative: vcm_conservative_usd, mid: vcm_mid_usd, optimistic: vcm_optimistic_usd }[priceScenario]
   const kes_per_tonne = Math.round(usdPrice * usd_to_kes)
   const annualTonnes  = Math.round(reductionMonthly * 12 * 100) / 100
@@ -148,12 +149,13 @@ export function calcCarbonCreditAllScenarios(reductionMonthly) {
 /**
  * Per-vehicle annual fuel cost for an ICE vehicle.
  */
-export function calcICEFuelCost({ type, kmPerDay, kmPerLitre, fuel }) {
-  const kpl       = kmPerLitre || MARKET_RATES.ice_kpl_default[type] || 8
-  const fuelType  = fuel || MARKET_RATES.ice_fuel_default[type] || 'petrol'
-  const price_kes = MARKET_RATES.fuel_kes_per_litre[fuelType]
+export function calcICEFuelCost({ type, kmPerDay, kmPerLitre, fuel }, customRates = null) {
+  const rates = customRates || MARKET_RATES
+  const kpl       = kmPerLitre || rates.ice_kpl_default[type] || 8
+  const fuelType  = fuel || rates.ice_fuel_default[type] || 'petrol'
+  const price_kes = rates.fuel_kes_per_litre[fuelType]
   const litresDay = kmPerDay / kpl
-  const annual    = Math.round(litresDay * price_kes * MARKET_RATES.working_days_per_year)
+  const annual    = Math.round(litresDay * price_kes * rates.working_days_per_year)
   const monthly   = Math.round(annual / 12)
 
   return { litresPerDay: Math.round(litresDay * 10) / 10, fuelType, price_kes, annual_kes: annual, monthly_kes: monthly }
@@ -162,11 +164,12 @@ export function calcICEFuelCost({ type, kmPerDay, kmPerLitre, fuel }) {
 /**
  * Per-vehicle annual electricity cost for an EV.
  */
-export function calcEVEnergyCost({ type, kmPerDay }) {
-  const kwh_per_km    = MARKET_RATES.ev_kwh_per_km[type] || 0.25
-  const elec_price    = MARKET_RATES.electricity_kes_per_kwh
+export function calcEVEnergyCost({ type, kmPerDay }, customRates = null) {
+  const rates = customRates || MARKET_RATES
+  const kwh_per_km    = rates.ev_kwh_per_km[type] || 0.25
+  const elec_price    = rates.electricity_kes_per_kwh
   const kwhPerDay     = kmPerDay * kwh_per_km
-  const annual        = Math.round(kwhPerDay * elec_price * MARKET_RATES.working_days_per_year)
+  const annual        = Math.round(kwhPerDay * elec_price * rates.working_days_per_year)
   const monthly       = Math.round(annual / 12)
 
   return { kwhPerDay: Math.round(kwhPerDay * 10) / 10, kwh_per_km, elec_price, annual_kes: annual, monthly_kes: monthly }

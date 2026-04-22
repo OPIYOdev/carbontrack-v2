@@ -1,16 +1,9 @@
 // src/components/Overview.jsx
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import { Chart } from 'chart.js/auto'
-import { FLEET, NDC } from '../data/fleet'
+import { useFleet } from '../FleetContext'
+import { NDC } from '../data/fleet'
 import { calcScenarios, ndcGapAnalysis } from '../utils/emissions'
-
-const totalMonthly = FLEET.reduce((s, v) => s + v.emPerMonth, 0)
-const totalAnnual = totalMonthly * 12
-const byType = {}
-FLEET.forEach((v) => { byType[v.type] = (byType[v.type] || 0) + v.emPerMonth })
-
-const scenarios = calcScenarios(totalMonthly)
-const ndcInfo = ndcGapAnalysis(totalAnnual)
 
 const styles = {
   page: { display: 'flex', flexDirection: 'column', gap: '16px' },
@@ -30,6 +23,13 @@ const styles = {
 }
 
 export default function Overview() {
+  const { activeFleet, fleetSummary } = useFleet()
+  const { totalMonthlyEmissions: totalMonthly, byType, hotspots, count, isDemo } = fleetSummary
+  const totalAnnual = totalMonthly * 12
+
+  const scenarios = useMemo(() => calcScenarios(totalMonthly), [totalMonthly])
+  const ndcInfo = useMemo(() => ndcGapAnalysis(totalAnnual), [totalAnnual])
+
   const donutRef = useRef(null)
   const trendRef = useRef(null)
   const donutChart = useRef(null)
@@ -106,10 +106,10 @@ export default function Overview() {
       donutChart.current?.destroy()
       trendChart.current?.destroy()
     }
-  }, [])
+  }, [byType])
 
   const kpis = [
-    { label: 'Total Vehicles', val: FLEET.length, sub: '50 vehicle pilot fleet', color: 'var(--text-1)' },
+    { label: 'Total Vehicles', val: count, sub: isDemo ? '50 vehicle pilot fleet' : 'Institutional uploaded fleet', color: 'var(--text-1)' },
     { label: 'Monthly Emissions', val: `${totalMonthly.toFixed(1)} t`, sub: 'tCO₂eq / month', color: 'var(--amber-600)' },
     { label: 'Annual Estimate', val: `${totalAnnual.toFixed(1)} t`, sub: 'tCO₂eq / year', color: '#A32D2D' },
     { label: 'NDC 2030 Gap', val: `${NDC.gap} Mt`, sub: 'national gap to close', color: '#A32D2D' },
@@ -124,7 +124,7 @@ export default function Overview() {
       <div style={styles.header}>
         <h2>Fleet Emission Overview</h2>
         <p style={styles.sub}>
-          Pilot: 50-vehicle institutional fleet · IPCC Tier 1 methodology ·
+          {isDemo ? 'Pilot: 50-vehicle institutional fleet' : `Institutional Fleet: ${count} vehicles`} · IPCC Tier 1 methodology ·
           Factors: petrol 0.00231, diesel 0.00268 tCO₂eq/L (IPCC 2006)
         </p>
       </div>

@@ -1,15 +1,16 @@
 // src/components/ScenarioModeler.jsx
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { Chart } from 'chart.js/auto'
-import { FLEET } from '../data/fleet'
+import { useFleet } from '../FleetContext'
 import { calcScenarios } from '../utils/emissions'
-
-const totalMonthly = FLEET.reduce((s, v) => s + v.emPerMonth, 0)
-const scenarios = calcScenarios(totalMonthly)
 
 const SCENARIO_KEYS = ['bau', 'routeConsolidation', 'modalShift', 'evFleet']
 
 export default function ScenarioModeler() {
+  const { fleetSummary } = useFleet()
+  const { totalMonthlyEmissions: totalMonthly } = fleetSummary
+  const scenarios = useMemo(() => calcScenarios(totalMonthly), [totalMonthly])
+
   const barRef = useRef(null)
   const lineRef = useRef(null)
   const barChart = useRef(null)
@@ -85,7 +86,7 @@ export default function ScenarioModeler() {
     })
 
     return () => { barChart.current?.destroy(); lineChart.current?.destroy() }
-  }, [])
+  }, [scenarios])
 
   const sel = scenarios[selected]
 

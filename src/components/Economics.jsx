@@ -1,11 +1,11 @@
 // src/components/Economics.jsx
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Chart } from 'chart.js/auto'
-import { FLEET } from '../data/fleet'
+import { useFleet } from '../FleetContext'
 import {
-  calcFleetEconomics, calcTCO, calcFuelSaving,
-  MARKET_RATES, VEHICLE_CAPITAL, MAINTENANCE_MONTHLY,
-  fmtKES, fmtKESFull,
+  calcFleetEconomics, calcTCO,
+  VEHICLE_CAPITAL,
+  fmtKES,
 } from '../utils/carbonEconomics'
 
 const VEHICLE_TYPES = ['matatu', 'county-car', 'lorry', 'boda-boda', 'bus']
@@ -69,13 +69,13 @@ function CompareBar({ label, iceVal, evVal, maxVal, iceLabel = 'ICE', evLabel = 
   )
 }
 
-export default function Economics({ uploadedFleet = [] }) {
-  const fleet          = uploadedFleet.length > 0 ? uploadedFleet : FLEET
-  const eco            = calcFleetEconomics(fleet)
+export default function Economics() {
+  const { activeFleet: fleet, marketRates } = useFleet()
+  const eco            = useMemo(() => calcFleetEconomics(fleet, marketRates), [fleet, marketRates])
   const [creditPrice, setCreditPrice] = useState('mid')
   const [tcoType, setTcoType]         = useState('matatu')
   const [tcoYears, setTcoYears]       = useState(5)
-  const tcoData = calcTCO({ type: tcoType, kmPerDay: SCENARIO_KM[tcoType], years: tcoYears })
+  const tcoData = useMemo(() => calcTCO({ type: tcoType, kmPerDay: SCENARIO_KM[tcoType], years: tcoYears }, marketRates), [tcoType, tcoYears, marketRates])
 
   const barRef  = useRef(null)
   const barChart= useRef(null)
@@ -147,9 +147,9 @@ export default function Economics({ uploadedFleet = [] }) {
       </div>
 
       <div className="alert alert-info">
-        <strong>Market rates used:</strong> EPRA fuel prices Jan 2025 (petrol KES 207.64/L, diesel KES 194.79/L) ·
-        KPLC electricity KES 22.50/kWh · Carbon credits $8–18/tCO₂eq (VCM Kenya, Ecosystem Marketplace 2024) ·
-        CBK exchange rate KES 130/USD · EV prices: Roam Electric, BasiGo, Ampersand Kenya 2024
+        <strong>Market rates used:</strong> EPRA fuel prices (petrol KES {marketRates.fuel_kes_per_litre.petrol}/L, diesel KES {marketRates.fuel_kes_per_litre.diesel}/L) ·
+        KPLC electricity KES {marketRates.electricity_kes_per_kwh}/kWh · Carbon credits ${marketRates.carbon_credit.vcm_conservative_usd}–{marketRates.carbon_credit.vcm_optimistic_usd}/tCO₂eq (VCM Kenya) ·
+        CBK exchange rate KES {marketRates.carbon_credit.usd_to_kes}/USD · EV prices: Roam Electric, BasiGo, Ampersand Kenya 2024
       </div>
 
       {/* ── SECTION 1: Fleet financial baseline ── */}
@@ -164,9 +164,9 @@ export default function Economics({ uploadedFleet = [] }) {
           <KpiCard label="Annual maintenance"      value={fmtKES(eco.totalAnnualMaintenance)} sub="ICE maintenance/yr"       accent="#854F0B" />
           <KpiCard label="Total annual opex"       value={fmtKES(eco.totalAnnualFuelCost + eco.totalAnnualMaintenance)} sub="fuel + maintenance" accent="#A32D2D" />
           <KpiCard label="EV-eligible vehicles"    value={`${eco.evEligibleCount} / ${eco.fleetSize}`} sub="types with EV in Kenya market" />
-          <KpiCard label="Petrol price"            value="KES 207.64/L"  note="EPRA Nairobi Jan 2025" />
-          <KpiCard label="Diesel price"            value="KES 194.79/L"  note="EPRA Nairobi Jan 2025" />
-          <KpiCard label="Electricity"             value="KES 22.50/kWh" note="KPLC SC2 commercial 2024" />
+          <KpiCard label="Petrol price"            value={`KES ${marketRates.fuel_kes_per_litre.petrol}/L`}  note="Current Market Rate" />
+          <KpiCard label="Diesel price"            value={`KES ${marketRates.fuel_kes_per_litre.diesel}/L`}  note="Current Market Rate" />
+          <KpiCard label="Electricity"             value={`KES ${marketRates.electricity_kes_per_kwh}/kWh`} note="KPLC Commercial Rate" />
         </div>
       </div>
 
@@ -181,9 +181,9 @@ export default function Economics({ uploadedFleet = [] }) {
         <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontSize: '12px', color: 'var(--text-2)' }}>Credit price scenario:</span>
           {[
-            ['conservative', `Conservative — $8/tCO₂eq (KES ${(8*130).toLocaleString()})`],
-            ['mid',          `Mid — $12/tCO₂eq (KES ${(12*130).toLocaleString()})`],
-            ['optimistic',   `Optimistic — $18/tCO₂eq (KES ${(18*130).toLocaleString()})`],
+            ['conservative', `Conservative — $${marketRates.carbon_credit.vcm_conservative_usd}/tCO₂eq (KES ${(marketRates.carbon_credit.vcm_conservative_usd * marketRates.carbon_credit.usd_to_kes).toLocaleString()})`],
+            ['mid',          `Mid — $${marketRates.carbon_credit.vcm_mid_usd}/tCO₂eq (KES ${(marketRates.carbon_credit.vcm_mid_usd * marketRates.carbon_credit.usd_to_kes).toLocaleString()})`],
+            ['optimistic',   `Optimistic — $${marketRates.carbon_credit.vcm_optimistic_usd}/tCO₂eq (KES ${(marketRates.carbon_credit.vcm_optimistic_usd * marketRates.carbon_credit.usd_to_kes).toLocaleString()})`],
           ].map(([key, label]) => (
             <button key={key} className="btn" onClick={() => setCreditPrice(key)}
               style={{ fontSize: '11px', padding: '5px 10px',

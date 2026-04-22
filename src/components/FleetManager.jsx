@@ -1,6 +1,6 @@
 // src/components/FleetManager.jsx
-import React, { useState } from 'react'
-import { FLEET } from '../data/fleet'
+import React, { useState, useMemo } from 'react'
+import { useFleet } from '../FleetContext'
 
 const TYPE_COLORS = {
   matatu: { bg: '#EAF3DE', text: '#27500A' },
@@ -10,38 +10,38 @@ const TYPE_COLORS = {
   bus: { bg: '#EEEDFE', text: '#3C3489' },
 }
 
-const maxEm = Math.max(...FLEET.map((v) => v.emPerMonth))
-
 export default function FleetManager() {
+  const { activeFleet, fleetSummary } = useFleet()
+  const { isDemo } = fleetSummary
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState('emPerMonth')
   const [search, setSearch] = useState('')
 
-  const types = ['all', ...new Set(FLEET.map((v) => v.type))]
+  const maxEm = useMemo(() => Math.max(...activeFleet.map((v) => v.emPerMonth || 0), 1), [activeFleet])
+  const types = useMemo(() => ['all', ...new Set(activeFleet.map((v) => v.type))], [activeFleet])
 
-  const filtered = FLEET
+  const filtered = useMemo(() => activeFleet
     .filter((v) => filter === 'all' || v.type === filter)
     .filter((v) =>
       !search || v.id.toLowerCase().includes(search.toLowerCase()) ||
       v.reg.toLowerCase().includes(search.toLowerCase()) ||
       v.route.toLowerCase().includes(search.toLowerCase())
     )
-    .sort((a, b) => b[sort] - a[sort])
+    .sort((a, b) => (b[sort] || 0) - (a[sort] || 0)), [activeFleet, filter, search, sort])
 
-  const totalEm = filtered.reduce((s, v) => s + v.emPerMonth, 0)
+  const totalEm = useMemo(() => filtered.reduce((s, v) => s + (v.emPerMonth || 0), 0), [filtered])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       <div>
         <h2>Fleet Manager</h2>
         <p style={{ fontSize: '13px', color: 'var(--text-2)', marginTop: '4px' }}>
-          50-vehicle synthetic pilot fleet · shaped on GIZ Kenya fleet study + KNBS vehicle registry
+          {isDemo ? '50-vehicle synthetic pilot fleet' : `Institutional Fleet: ${activeFleet.length} vehicles`} · shaped on GIZ Kenya fleet study + KNBS vehicle registry
         </p>
       </div>
 
       <div className="alert alert-info">
-        <strong>Data note:</strong> This is a synthetic demonstration dataset. Real deployment connects to NTSA
-        vehicle registry and fuel marketer APIs via MCP integration. Estimates carry ±15–25% uncertainty.
+        <strong>Data note:</strong> {isDemo ? 'This is a synthetic demonstration dataset.' : 'This is your uploaded institutional fleet data.'} Real deployment connects to NTSA vehicle registry and fuel marketer APIs via MCP integration. Estimates carry ±15–25% uncertainty.
       </div>
 
       {/* Controls */}
