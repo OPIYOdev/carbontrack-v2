@@ -9,6 +9,7 @@ import AIAnalyst from './components/AIAnalyst'
 import ScenarioModeler from './components/ScenarioModeler'
 import Economics from './components/Economics'
 import PolicyReport from './components/PolicyReport'
+import KenyaComplianceCalculator from './components/KenyaComplianceCalculator'
 import ActionWorkflow from './components/ActionWorkflow'
 import AuditTrail from './components/AuditTrail'
 
@@ -23,6 +24,7 @@ const ALL_TABS = {
   workflow:   { label: 'Workflow',      component: ActionWorkflow },
   audit:      { label: 'Audit Trail',   component: AuditTrail },
   report:     { label: 'Policy Report', component: PolicyReport },
+  compliance: { label: 'Compliance',    component: KenyaComplianceCalculator },
 }
 
 const S = {

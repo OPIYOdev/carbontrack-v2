@@ -11,7 +11,7 @@ export const ROLES = {
   compliance: {
     label: 'Compliance Officer',
     description: 'Track regulatory obligations, prepare EPRA reports, manage NDC progress',
-    tabs: ['overview', 'scenarios', 'economics', 'report', 'workflow', 'audit', 'ai'],
+    tabs: ['overview', 'compliance', 'scenarios', 'economics', 'report', 'workflow', 'audit', 'ai'],
     color: '#185FA5', bg: '#E6F1FB', border: '#B5D4F4',
   },
   auditor: {
@@ -29,7 +29,7 @@ export const ROLES = {
   regulator: {
     label: 'Regulator (EPRA)',
     description: 'Review institutional emission accounts and NDC alignment',
-    tabs: ['overview', 'scenarios', 'economics', 'report', 'audit'],
+    tabs: ['overview', 'compliance', 'scenarios', 'economics', 'report', 'audit'],
     color: '#A32D2D', bg: '#FCEBEB', border: '#F7C1C1',
   },
   executive: {
