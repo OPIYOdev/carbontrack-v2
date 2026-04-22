@@ -24,19 +24,19 @@ function normalizeHeader(raw) {
 const HEADER_ALIASES = {
   // Vehicle identity
   id:          ['id', 'vehicle_id', 'vid', 'veh_id', 'fleet_id'],
-  reg:         ['reg', 'registration', 'plate', 'number_plate', 'reg_no', 'reg_number', 'licence_plate', 'license_plate'],
+  reg:         ['reg', 'registration', 'plate', 'number_plate', 'reg_no', 'reg_number', 'licence_plate', 'license_plate', 'reg_plate'],
   vehicle_type:['vehicle_type', 'type', 'category', 'veh_type', 'class', 'fleet_type'],
   fuel_type:   ['fuel_type', 'fuel', 'fuel_kind', 'energy_type', 'propulsion'],
-  age:         ['age', 'vehicle_age', 'years', 'age_yrs', 'year_of_manufacture', 'yom', 'model_year'],
-  route:       ['route', 'route_name', 'road', 'corridor', 'service_route', 'path'],
+  age:         ['age', 'vehicle_age', 'years', 'age_yrs', 'year_of_manufacture', 'yom', 'model_year', 'age_yr'],
+  route:       ['route', 'route_name', 'road', 'corridor', 'service_route', 'path', 'primary_route'],
   seats:       ['seats', 'capacity', 'passengers', 'seating', 'seat_capacity', 'pax'],
   // Distance / fuel
-  km_per_day:  ['km_per_day', 'daily_km', 'km_day', 'distance_per_day', 'daily_distance', 'dist_day', 'kms_per_day', 'kilometres_per_day'],
-  km_per_litre:['km_per_litre', 'efficiency', 'fuel_efficiency', 'kpl', 'mpg', 'km_l', 'kmpl', 'fuel_economy', 'consumption_rate'],
-  litres_per_day:['litres_per_day', 'fuel_litres', 'litres_day', 'litres', 'fuel_consumption', 'daily_fuel', 'ltr_per_day', 'liters_per_day'],
+  km_per_day:  ['km_per_day', 'daily_km', 'km_day', 'distance_per_day', 'daily_distance', 'dist_day', 'kms_per_day', 'kilometres_per_day', 'daily_km_avg'],
+  km_per_litre:['km_per_litre', 'efficiency', 'fuel_efficiency', 'kpl', 'mpg', 'km_l', 'kmpl', 'fuel_economy', 'consumption_rate', 'km_litre'],
+  litres_per_day:['litres_per_day', 'fuel_litres', 'litres_day', 'litres', 'fuel_consumption', 'daily_fuel', 'ltr_per_day', 'liters_per_day', 'daily_fuel_litres'],
   // PII — will be masked
-  driver:      ['driver', 'driver_name', 'name', 'operator', 'owner', 'assigned_to'],
-  phone:       ['phone', 'mobile', 'contact', 'telephone', 'cell', 'phone_number'],
+  driver:      ['driver', 'driver_name', 'name', 'operator', 'owner', 'assigned_to', 'driver_name_pii'],
+  phone:       ['phone', 'mobile', 'contact', 'telephone', 'cell', 'phone_number', 'driver_phone_pii'],
   id_number:   ['id_number', 'national_id', 'id_no', 'nid', 'passport', 'id_card'],
 }
 
