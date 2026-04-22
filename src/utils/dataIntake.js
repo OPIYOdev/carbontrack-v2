@@ -257,9 +257,9 @@ function expandMerges(worksheet) {
       for (let c = s.c; c <= e.c; c++) {
         if (r === s.r && c === s.c) continue // skip source cell itself
         const addr = XLSX.utils.encode_cell({ r, c })
-        if (!worksheet[addr]) {
-          worksheet[addr] = { ...sourceCell }
-        }
+        // Always fill merged cells, even if they have an empty object or null
+        // This ensures the value from the top-left cell (s) is propagated.
+        worksheet[addr] = { ...sourceCell }
       }
     }
   }
@@ -338,8 +338,7 @@ function validateRow(row, rowNum) {
   }
 
   if (!row.fuel) {
-    issues.push(`row ${rowNum}: fuel_type unrecognized — defaulting to petrol`)
-    // Not a fatal error — we default
+    issues.push(`row ${rowNum}: fuel_type missing or unrecognized (original: "${row.fuelRaw}")`)
   }
 
   if (row.kmPerLitre !== null && row.kmPerLitre < 0.5) {
@@ -355,7 +354,7 @@ function validateRow(row, rowNum) {
     issues.push(`row ${rowNum}: age ${row.age} — vehicle over 40 years old, verify`)
   }
 
-  const isFatal = row.kmPerDay === null || row.kmPerDay <= 0
+  const isFatal = row.kmPerDay === null || row.kmPerDay <= 0 || !row.fuel
   return { issues, isFatal }
 }
 
@@ -374,16 +373,16 @@ function normalizeRow(raw, idx) {
   const seats       = toInt(raw.seats)
 
   const fuelRaw = raw.fuel_type
-  const fuel    = normalizeFuel(fuelRaw) || 'petrol'
+  const fuel    = normalizeFuel(fuelRaw)
   const type    = normalizeType(raw.vehicle_type)
 
   // Litres per day: use explicit value if present, else derive from km ÷ efficiency
   // Use an efficiency default based on vehicle type if km_per_litre is missing
   const defaultKpl = { matatu: 8.5, 'county-car': 11, lorry: 4, 'boda-boda': 33, bus: 5 }
   const kpl = kmPerLitre ?? defaultKpl[type] ?? 9
-  const litresPerDay = litresRaw ?? (kmPerDay !== null ? kmPerDay / kpl : null)
+  const litresPerDay = litresRaw ?? (kmPerDay !== null && kpl > 0 ? kmPerDay / kpl : null)
 
-  const { emPerDay, emPerMonth, emPerYear } = litresPerDay !== null
+  const { emPerDay, emPerMonth, emPerYear } = (litresPerDay !== null && fuel)
     ? calcEmission(litresPerDay, fuel, WORKING_DAYS)
     : { emPerDay: 0, emPerMonth: 0, emPerYear: 0 }
 
