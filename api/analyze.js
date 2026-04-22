@@ -56,7 +56,8 @@ HARD RULES:
 5. Flag distributional impacts (who bears cost of transition)
 6. List data gaps honestly
 7. Never recommend irreversible action without flagging human approval
-8. Role-tailor your response to the stated role`
+8. Role-tailor your response to the stated role.
+9. IMPORTANT: Your output will be displayed to non-technical stakeholders. Use clear, professional language. Avoid jargon. Focus on ROI, compliance, and specific next steps.`
 
 export default async function handler(req) {
   if (req.method !== 'POST') {
@@ -93,17 +94,17 @@ ${scenario ? `FOCUS SCENARIO: ${scenario}` : ''}
 
 Return ONLY this JSON structure:
 {
-  "summary": "2-3 sentence executive summary with specific numbers and KES figures",
-  "roleInsight": "1-2 sentences specifically addressing the ${role} role perspective",
+  "summary": "2-3 sentence executive summary. Use clear, non-technical language. Focus on the 'bottom line' (total savings and compliance status).",
+  "roleInsight": "1-2 sentences specifically addressing the ${role} role. What is the most important thing for them to know right now?",
   "ndcAlignment": {
     "annualEstimate": <number tCO2eq>,
-    "ndcBenchmark": "<comparison string>",
+    "ndcBenchmark": "<comparison string, e.g., '12% above 2030 target trajectory'>",
     "trajectoryRisk": "low|medium|high"
   },
   "topOpportunities": [
     {
       "rank": 1,
-      "action": "<specific action>",
+      "action": "<clear, actionable title, e.g., 'Replace 5 oldest diesel buses with EV'>",
       "saving_tco2eq_month": <number>,
       "saving_pct": <number>,
       "financial": {
@@ -116,29 +117,29 @@ Return ONLY this JSON structure:
         "5yr_net_kes": <total 5yr benefit minus capital cost>,
         "monthly_cashflow_kes": <monthly benefit after financing>
       },
-      "distributionalImpact": "<who bears transition cost>",
+      "distributionalImpact": "<clear explanation of who pays and who benefits>",
       "confidence": <0.0-1.0>,
       "evidenceLink": "<row ID, file, or dataset cited>",
       "source": "<IPCC table or study name>",
       "approvalRequired": "<who must approve>"
     }
   ],
-  "hotspotAnalysis": "<paragraph citing specific vehicle IDs and emission values>",
+  "hotspotAnalysis": "<clear paragraph explaining why certain vehicles are high emitters and what to do about them.>",
   "complianceFlags": [
-    { "flag": "<issue>", "regulation": "<Act or NDC clause>", "severity": "low|medium|high" }
+    { "flag": "<clear issue name>", "regulation": "<Act or NDC clause>", "severity": "low|medium|high" }
   ],
   "financialSummary": {
     "total_annual_fuel_cost_kes": <current ICE fleet fuel bill>,
-    "best_roi_scenario": "<scenario name>",
+    "best_roi_scenario": "<clear scenario name>",
     "best_roi_payback_years": <number>,
     "carbon_credit_potential_annual_kes": <at mid $12/tCO2eq if best scenario implemented>,
     "route_consolidation_saving_kes": <zero-capital option annual saving>
   },
   "dataGaps": ["<gap 1>", "<gap 2>", "<gap 3>"],
   "auditNote": "<what an auditor should verify>",
-  "policyRecommendation": "<one concrete ask citing specific regulation with KES value>",
-  "uncertaintyNote": "<±% range and reason>",
-  "nextAction": { "owner": "<role>", "action": "<what they should do>", "deadline": "<timeframe>" }
+  "policyRecommendation": "<one concrete, high-level recommendation for leadership.>",
+  "uncertaintyNote": "<±% range and reason in plain English>",
+  "nextAction": { "owner": "<role>", "action": "<clear, imperative action, e.g., 'Initiate procurement for EV charging infrastructure'>", "deadline": "<realistic timeframe, e.g., 'Q3 2024'>" }
 }`
 
   try {

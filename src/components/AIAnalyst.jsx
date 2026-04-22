@@ -71,7 +71,7 @@ export default function AIAnalyst({ role, uploadedFleet = [] }) {
       <div>
         <h2>AI Transport Analyst</h2>
         <p style={{ fontSize: '13px', color: 'var(--text-2)', marginTop: '4px' }}>
-          Powered by Groq · llama-3.3-70b-versatile · free tier · role-aware · every finding cited
+          Powered by Groq · llama-3.3-70b-versatile · role-aware · every finding cited
         </p>
       </div>
       <div className="alert alert-warn">
@@ -114,137 +114,173 @@ export default function AIAnalyst({ role, uploadedFleet = [] }) {
       )}
       {result && !result.parseError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="card">
-            <h3 style={{ marginBottom: '8px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Executive summary</h3>
-            <p style={{ fontSize: '13px', lineHeight: 1.7 }}>{result.summary}</p>
+          {/* Executive Summary & Role Insight */}
+          <div className="card" style={{ borderLeft: '4px solid var(--green-600)' }}>
+            <h3 style={{ marginBottom: '8px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Executive Summary</h3>
+            <p style={{ fontSize: '15px', lineHeight: 1.6, fontWeight: 500, color: 'var(--text-1)' }}>{result.summary}</p>
             {result.roleInsight && (
-              <p style={{ fontSize: '13px', lineHeight: 1.7, marginTop: '8px', color: 'var(--green-800)',
-                background: 'var(--green-50)', padding: '8px 10px', borderRadius: '6px' }}>
-                <strong>{role.replace('_',' ')} view:</strong> {result.roleInsight}
-              </p>
-            )}
-            {result.ndcAlignment && (
-              <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px',
-                  background: (riskColor[result.ndcAlignment.trajectoryRisk]||'#888')+'22',
-                  color: riskColor[result.ndcAlignment.trajectoryRisk]||'#888' }}>
-                  NDC risk: {result.ndcAlignment.trajectoryRisk}
-                </span>
-                <span className="tag tag-gray">{result.ndcAlignment.ndcBenchmark}</span>
+              <div style={{ marginTop: '12px', padding: '10px', background: 'var(--green-50)', borderRadius: '8px', border: '0.5px solid var(--green-100)' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--green-800)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                  {role.replace('_',' ')} Perspective
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--green-900)', lineHeight: 1.5 }}>{result.roleInsight}</p>
               </div>
             )}
           </div>
+
+          {/* Next Action - High Visibility */}
+          {result.nextAction && (
+            <div style={{ background: 'var(--blue-600)', color: 'white', borderRadius: '10px', padding: '16px', boxShadow: '0 4px 12px rgba(24, 95, 165, 0.2)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', opacity: 0.9, marginBottom: '8px' }}>Immediate Next Step</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>{result.nextAction.action}</div>
+                  <div style={{ fontSize: '13px', opacity: 0.9 }}>Owner: <strong>{result.nextAction.owner.replace('_',' ')}</strong></div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '11px', opacity: 0.8 }}>Deadline</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700 }}>{result.nextAction.deadline}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* NDC Alignment & Trajectory */}
+          {result.ndcAlignment && (
+            <div className="card">
+              <h3 style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>NDC Alignment & Trajectory</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ background: 'var(--surface-2)', padding: '12px', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-3)', marginBottom: '4px' }}>Annual Estimate</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-1)' }}>{result.ndcAlignment.annualEstimate.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 400 }}>tCO₂eq</span></div>
+                </div>
+                <div style={{ background: (riskColor[result.ndcAlignment.trajectoryRisk]||'#888')+'11', padding: '12px', borderRadius: '8px', border: `1px solid ${(riskColor[result.ndcAlignment.trajectoryRisk]||'#888')+'33'}` }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-3)', marginBottom: '4px' }}>Trajectory Risk</div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: riskColor[result.ndcAlignment.trajectoryRisk]||'#888', textTransform: 'capitalize' }}>{result.ndcAlignment.trajectoryRisk}</div>
+                </div>
+              </div>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--text-2)', padding: '8px', background: 'var(--surface-2)', borderRadius: '6px' }}>
+                <strong>Benchmark:</strong> {result.ndcAlignment.ndcBenchmark}
+              </div>
+            </div>
+          )}
+
+          {/* Top Opportunities */}
           {result.topOpportunities?.length > 0 && (
             <div className="card">
-              <h3 style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Top opportunities · added to workflow
+              <h3 style={{ marginBottom: '16px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                Strategic Opportunities
               </h3>
               {result.topOpportunities.map((op) => (
-                <div key={op.rank} style={{ borderBottom: '0.5px solid var(--border)', paddingBottom: '14px', marginBottom: '14px' }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <span style={{ background: 'var(--green-50)', color: 'var(--green-800)', width: '22px', height: '22px',
-                      borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, flexShrink: 0 }}>{op.rank}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 500, flex: 1 }}>{op.action}</span>
-                    <span style={{ fontSize: '10px', background: 'var(--surface-2)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0 }}>
-                      {op.confidence !== undefined ? Math.round(op.confidence*100)+'% conf.' : ''}
+                <div key={op.rank} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '16px', marginBottom: '16px', background: 'var(--surface)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <span style={{ background: 'var(--green-600)', color: 'white', width: '24px', height: '24px',
+                        borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>{op.rank}</span>
+                      <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-1)' }}>{op.action}</span>
+                    </div>
+                    <span style={{ fontSize: '11px', background: 'var(--green-50)', color: 'var(--green-700)', padding: '4px 8px', borderRadius: '20px', fontWeight: 600 }}>
+                      {Math.round((op.confidence||0)*100)}% Confidence
                     </span>
                   </div>
-                  <div style={{ marginLeft: '30px' }}>
-                    {/* Emission saving */}
-                    <div style={{ fontSize: '12px', color: 'var(--text-2)', marginBottom: '8px' }}>
-                      Emission saving: <span style={{ color: '#3B6D11', fontWeight: 600 }}>−{op.saving_tco2eq_month} tCO₂eq/mo (−{op.saving_pct}%)</span>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+                    <div style={{ background: 'var(--green-50)', padding: '10px', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--green-700)', fontWeight: 700, textTransform: 'uppercase' }}>Monthly Saving</div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green-800)' }}>−{op.saving_tco2eq_month} tCO₂eq</div>
+                      <div style={{ fontSize: '11px', color: 'var(--green-600)' }}>{op.saving_pct}% reduction</div>
                     </div>
-                    {/* Financial breakdown grid */}
                     {op.financial && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '6px', marginBottom: '8px' }}>
-                        {[
-                          ['Annual fuel saving',    op.financial.annual_fuel_saving_kes,        '#3B6D11'],
-                          ['Maintenance saving/yr', op.financial.annual_maintenance_saving_kes,  '#3B6D11'],
-                          ['Carbon credits/yr',     op.financial.carbon_credit_annual_kes,       '#185FA5'],
-                          ['Total benefit/yr',      op.financial.total_annual_benefit_kes,       '#3B6D11'],
-                          ['Capital required',      op.financial.capital_cost_kes,               op.financial.capital_cost_kes > 0 ? '#854F0B' : '#3B6D11'],
-                          ['5-yr net position',     op.financial.five_yr_net_kes ?? op.financial['5yr_net_kes'], op.financial['5yr_net_kes'] > 0 ? '#3B6D11' : '#A32D2D'],
-                        ].filter(([,v]) => v !== undefined && v !== null).map(([label, val, color]) => (
-                          <div key={label} style={{ background: 'var(--surface-2)', borderRadius: '6px', padding: '6px 8px' }}>
-                            <div style={{ fontSize: '10px', color: 'var(--text-3)', marginBottom: '2px' }}>{label}</div>
-                            <div style={{ fontSize: '12px', fontWeight: 700, color, fontFamily: 'var(--font-mono)' }}>
-                              {typeof val === 'number'
-                                ? `KES ${Math.round(val).toLocaleString('en-KE')}`
-                                : val ?? '—'}
-                            </div>
-                          </div>
-                        ))}
-                        {op.financial.payback_years !== null && op.financial.payback_years !== undefined && (
-                          <div style={{ background: op.financial.payback_years <= 5 ? 'var(--green-50)' : 'var(--amber-50)', borderRadius: '6px', padding: '6px 8px', border: `0.5px solid ${op.financial.payback_years <= 5 ? 'var(--green-100)' : 'var(--amber-100)'}` }}>
-                            <div style={{ fontSize: '10px', color: 'var(--text-3)', marginBottom: '2px' }}>Payback period</div>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: op.financial.payback_years <= 5 ? '#27500A' : '#633806' }}>
-                              {op.financial.payback_years}yr
-                            </div>
+                      <>
+                        <div style={{ background: 'var(--surface-2)', padding: '10px', borderRadius: '8px' }}>
+                          <div style={{ fontSize: '10px', color: 'var(--text-3)', fontWeight: 700, textTransform: 'uppercase' }}>Annual Benefit</div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green-700)' }}>KES {Math.round(op.financial.total_annual_benefit_kes).toLocaleString('en-KE')}</div>
+                        </div>
+                        {op.financial.payback_years !== null && (
+                          <div style={{ background: op.financial.payback_years <= 3 ? 'var(--green-50)' : 'var(--surface-2)', padding: '10px', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '10px', color: 'var(--text-3)', fontWeight: 700, textTransform: 'uppercase' }}>Payback</div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: op.financial.payback_years <= 3 ? 'var(--green-700)' : 'var(--text-1)' }}>{op.financial.payback_years} Years</div>
                           </div>
                         )}
-                      </div>
+                      </>
                     )}
-                    <div style={{ fontSize: '12px', color: '#854F0B', marginBottom: '4px' }}>
-                      Distributional: {op.distributionalImpact}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-2)', marginBottom: '2px' }}>
-                      Approval: <strong>{op.approvalRequired}</strong>
-                    </div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-3)' }}>
-                      Evidence: {op.evidenceLink} · {op.source}
-                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: 'var(--text-2)', lineHeight: 1.5, marginBottom: '12px', padding: '10px', background: 'var(--surface-2)', borderRadius: '6px' }}>
+                    <strong>Impact:</strong> {op.distributionalImpact}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-3)', borderTop: '0.5px solid var(--border)', paddingTop: '10px' }}>
+                    <div>Approval: <strong style={{ color: 'var(--text-1)' }}>{op.approvalRequired.replace('_',' ')}</strong></div>
+                    <div title={op.source}>Source: {op.evidenceLink}</div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            {result.financialSummary && (
-              <div className="card">
-                <h3 style={{ marginBottom: '8px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Financial summary</h3>
+
+          {/* Financial Summary Grid */}
+          {result.financialSummary && (
+            <div className="card">
+              <h3 style={{ marginBottom: '12px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Financial Outlook</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 {[
-                  ['Current annual fuel bill', result.financialSummary.total_annual_fuel_cost_kes],
-                  ['Best ROI scenario',         result.financialSummary.best_roi_scenario],
-                  ['Payback period',            result.financialSummary.best_roi_payback_years ? `${result.financialSummary.best_roi_payback_years}yr` : null],
-                  ['Carbon credit potential/yr', result.financialSummary.carbon_credit_potential_annual_kes],
-                  ['Route consolidation saving', result.financialSummary.route_consolidation_saving_kes],
-                ].filter(([,v]) => v !== null && v !== undefined).map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '0.5px solid var(--border)', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-2)' }}>{k}</span>
-                    <span style={{ fontFamily: typeof v === 'number' ? 'var(--font-mono)' : 'inherit', fontWeight: 500, color: '#3B6D11' }}>
-                      {typeof v === 'number' ? `KES ${Math.round(v).toLocaleString('en-KE')}` : v}
-                    </span>
+                  ['Current Annual Fuel Bill', result.financialSummary.total_annual_fuel_cost_kes, 'KES'],
+                  ['Carbon Credit Potential', result.financialSummary.carbon_credit_potential_annual_kes, 'KES'],
+                  ['Route Optimization Saving', result.financialSummary.route_consolidation_saving_kes, 'KES'],
+                ].map(([label, val, unit]) => (
+                  <div key={label} style={{ padding: '12px', background: 'var(--surface-2)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-3)', marginBottom: '4px' }}>{label}</div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-1)' }}>
+                      {unit} {Math.round(val).toLocaleString('en-KE')}
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-            {result.complianceFlags?.length > 0 && (
-              <div className="card">
-                <h3 style={{ marginBottom: '8px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Compliance flags</h3>
-                {result.complianceFlags.map((f, i) => (
-                  <div key={i} style={{ padding: '5px 0', borderBottom: '0.5px solid var(--border)', fontSize: '12px' }}>
-                    <div style={{ fontWeight: 500 }}>{f.flag}</div>
-                    <div style={{ color: 'var(--text-3)', fontSize: '11px' }}>{f.regulation} · {f.severity}</div>
-                  </div>
-                ))}
+              <div style={{ marginTop: '12px', padding: '10px', background: 'var(--blue-50)', borderRadius: '8px', border: '0.5px solid var(--blue-100)' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--blue-800)', textTransform: 'uppercase' }}>Best ROI Strategy</div>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--blue-900)' }}>{result.financialSummary.best_roi_scenario}</div>
+                <div style={{ fontSize: '12px', color: 'var(--blue-700)' }}>Expected payback in {result.financialSummary.best_roi_payback_years} years</div>
               </div>
-            )}
-            {result.dataGaps?.length > 0 && (
-              <div className="card">
-                <h3 style={{ marginBottom: '8px', fontSize: '12px', color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Data gaps</h3>
-                <ul style={{ paddingLeft: '16px', fontSize: '12px', color: 'var(--text-2)', lineHeight: 1.8 }}>
-                  {result.dataGaps.map((g, i) => <li key={i}>{g}</li>)}
+            </div>
+          )}
+
+          {/* Compliance & Policy */}
+          {(result.complianceFlags?.length > 0 || result.policyRecommendation) && (
+            <div className="card" style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-100)' }}>
+              <h3 style={{ marginBottom: '12px', fontSize: '12px', color: '#854F0B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Compliance & Policy</h3>
+              
+              {result.complianceFlags?.map((f, i) => (
+                <div key={i} style={{ marginBottom: '12px', padding: '10px', background: 'white', borderRadius: '8px', border: '0.5px solid var(--amber-200)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#A32D2D' }}>{f.flag}</div>
+                    <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: (riskColor[f.severity]||'#888')+'22', color: riskColor[f.severity]||'#888', fontWeight: 700, textTransform: 'uppercase' }}>{f.severity}</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-2)' }}>{f.regulation}</div>
+                </div>
+              ))}
+
+              {result.policyRecommendation && (
+                <div style={{ marginTop: '8px', padding: '12px', background: 'var(--green-600)', borderRadius: '8px', color: 'white' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', opacity: 0.9, marginBottom: '4px' }}>Policy Recommendation</div>
+                  <p style={{ fontSize: '13px', lineHeight: 1.5, fontWeight: 500 }}>{result.policyRecommendation}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Data Gaps & Technical Notes */}
+          {(result.dataGaps?.length > 0 || result.uncertaintyNote) && (
+            <div className="card" style={{ background: 'var(--surface-2)' }}>
+              <h3 style={{ marginBottom: '8px', fontSize: '12px', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Data Quality & Gaps</h3>
+              {result.dataGaps?.length > 0 && (
+                <ul style={{ paddingLeft: '18px', fontSize: '12px', color: 'var(--text-2)', marginBottom: '8px' }}>
+                  {result.dataGaps.map((g, i) => <li key={i} style={{ marginBottom: '4px' }}>{g}</li>)}
                 </ul>
-              </div>
-            )}
-          </div>
-          {result.policyRecommendation && (
-            <div style={{ background: 'var(--green-50)', border: '0.5px solid var(--green-100)', borderRadius: '10px', padding: '14px' }}>
-              <h3 style={{ marginBottom: '6px', color: 'var(--green-800)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Policy recommendation for EPRA</h3>
-              <p style={{ fontSize: '13px', color: 'var(--green-800)', lineHeight: 1.7 }}>{result.policyRecommendation}</p>
-              {result.nextAction && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--green-600)' }}>
-                  Next: <strong>{result.nextAction.owner}</strong> to {result.nextAction.action} by {result.nextAction.deadline}
+              )}
+              {result.uncertaintyNote && (
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', fontStyle: 'italic', borderTop: '0.5px solid var(--border)', paddingTop: '8px' }}>
+                  Note: {result.uncertaintyNote}
                 </div>
               )}
             </div>
@@ -253,8 +289,11 @@ export default function AIAnalyst({ role, uploadedFleet = [] }) {
       )}
       {result?.parseError && (
         <div className="card">
-          <h3 style={{ marginBottom: '8px' }}>Raw response</h3>
-          <pre style={{ fontSize: '11px', whiteSpace: 'pre-wrap', color: 'var(--text-2)' }}>{result.raw}</pre>
+          <h3 style={{ marginBottom: '8px' }}>Analysis Output</h3>
+          <div className="alert alert-danger" style={{ marginBottom: '12px' }}>
+            The AI response could not be parsed into the standard dashboard format. Showing raw output below.
+          </div>
+          <pre style={{ fontSize: '12px', whiteSpace: 'pre-wrap', color: 'var(--text-2)', background: 'var(--surface-2)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>{result.raw}</pre>
         </div>
       )}
     </div>
