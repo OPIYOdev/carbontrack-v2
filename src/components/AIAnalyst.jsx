@@ -4,6 +4,21 @@ import { FLEET, getFleetSummary } from '../data/fleet'
 import { logEvent } from '../utils/auditTrail'
 import { addAction } from '../utils/actionStore'
 
+// Helper to safely format numbers that might be strings or have commas
+const formatKES = (val) => {
+  if (val === null || val === undefined) return '—';
+  const num = typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val;
+  if (isNaN(num)) return val;
+  return Math.round(num).toLocaleString('en-KE');
+};
+
+const formatNum = (val) => {
+  if (val === null || val === undefined) return '—';
+  const num = typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val;
+  if (isNaN(num)) return val;
+  return num.toLocaleString();
+};
+
 export default function AIAnalyst({ role, uploadedFleet = [] }) {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -136,7 +151,7 @@ export default function AIAnalyst({ role, uploadedFleet = [] }) {
               <div>
                 <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', opacity: 0.8, letterSpacing: '1px', marginBottom: '16px' }}>Priority Next Step</div>
                 <div style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1.3, marginBottom: '8px' }}>{result.nextAction?.action}</div>
-                <div style={{ fontSize: '14px', opacity: 0.9 }}>Owner: <strong>{result.nextAction?.owner.replace('_',' ')}</strong></div>
+                <div style={{ fontSize: '14px', opacity: 0.9 }}>Owner: <strong>{result.nextAction?.owner?.replace('_',' ')}</strong></div>
               </div>
               <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', opacity: 0.8 }}>Target Deadline</span>
@@ -149,19 +164,19 @@ export default function AIAnalyst({ role, uploadedFleet = [] }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
             <div className="card" style={{ padding: '16px' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '8px' }}>Annual Emissions</div>
-              <div style={{ fontSize: '22px', fontWeight: 700 }}>{result.ndcAlignment?.annualEstimate.toLocaleString()} <span style={{ fontSize: '12px', fontWeight: 400 }}>tCO₂e</span></div>
+              <div style={{ fontSize: '22px', fontWeight: 700 }}>{formatNum(result.ndcAlignment?.annualEstimate)} <span style={{ fontSize: '12px', fontWeight: 400 }}>tCO₂eq</span></div>
             </div>
             <div className="card" style={{ padding: '16px' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '8px' }}>NDC Risk Level</div>
-              <div style={{ fontSize: '22px', fontWeight: 700, color: riskColor[result.ndcAlignment?.trajectoryRisk] || 'var(--text-1)' }}>{result.ndcAlignment?.trajectoryRisk.toUpperCase()}</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: riskColor[result.ndcAlignment?.trajectoryRisk?.toLowerCase()] || 'var(--text-1)' }}>{result.ndcAlignment?.trajectoryRisk?.toUpperCase()}</div>
             </div>
             <div className="card" style={{ padding: '16px' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '8px' }}>Annual Fuel Bill</div>
-              <div style={{ fontSize: '22px', fontWeight: 700 }}>KES {Math.round(result.financialSummary?.total_annual_fuel_cost_kes / 1000000).toLocaleString()}M</div>
+              <div style={{ fontSize: '22px', fontWeight: 700 }}>KES {formatKES(result.financialSummary?.total_annual_fuel_cost_kes)}</div>
             </div>
             <div className="card" style={{ padding: '16px' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: '8px' }}>Credit Potential</div>
-              <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--green-600)' }}>KES {Math.round(result.financialSummary?.carbon_credit_potential_annual_kes / 1000).toLocaleString()}K</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--green-600)' }}>KES {formatKES(result.financialSummary?.carbon_credit_potential_annual_kes)}</div>
             </div>
           </div>
 
@@ -176,16 +191,16 @@ export default function AIAnalyst({ role, uploadedFleet = [] }) {
                   <div key={op.rank} className="card" style={{ padding: '20px', borderLeft: op.rank === 1 ? '4px solid var(--green-600)' : '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                       <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-1)' }}>{op.action}</div>
-                      <div style={{ fontSize: '11px', background: 'var(--green-50)', color: 'var(--green-700)', padding: '4px 10px', borderRadius: '20px', fontWeight: 700 }}>{Math.round(op.confidence * 100)}% Confidence</div>
+                      <div style={{ fontSize: '11px', background: 'var(--green-50)', color: 'var(--green-700)', padding: '4px 10px', borderRadius: '20px', fontWeight: 700 }}>{Math.round((parseFloat(op.confidence) || 0) * 100)}% Confidence</div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                       <div>
                         <div style={{ fontSize: '10px', color: 'var(--text-3)', textTransform: 'uppercase' }}>Monthly Saving</div>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green-700)' }}>−{op.saving_tco2eq_month} tCO₂e</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green-700)' }}>−{formatNum(op.saving_tco2eq_month)} tCO₂e</div>
                       </div>
                       <div>
                         <div style={{ fontSize: '10px', color: 'var(--text-3)', textTransform: 'uppercase' }}>Annual Benefit</div>
-                        <div style={{ fontSize: '14px', fontWeight: 700 }}>KES {Math.round(op.financial?.total_annual_benefit_kes).toLocaleString()}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700 }}>KES {formatKES(op.financial?.total_annual_benefit_kes)}</div>
                       </div>
                       <div>
                         <div style={{ fontSize: '10px', color: 'var(--text-3)', textTransform: 'uppercase' }}>Payback</div>
@@ -209,7 +224,7 @@ export default function AIAnalyst({ role, uploadedFleet = [] }) {
                     <div key={i} style={{ marginBottom: i === result.complianceFlags.length - 1 ? 0 : '12px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <span style={{ fontWeight: 700, fontSize: '13px', color: '#A32D2D' }}>{f.flag}</span>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: riskColor[f.severity], textTransform: 'uppercase' }}>{f.severity}</span>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: riskColor[f.severity?.toLowerCase()], textTransform: 'uppercase' }}>{f.severity}</span>
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-2)' }}>{f.regulation}</div>
                     </div>

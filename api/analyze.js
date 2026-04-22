@@ -172,12 +172,22 @@ Return ONLY this JSON structure:
 
     let parsed
     try {
-      const clean = text.replace(/```json|```/g, '').trim()
-      const start = clean.indexOf('{')
-      const end = clean.lastIndexOf('}')
-      parsed = JSON.parse(clean.slice(start, end + 1))
-    } catch {
-      parsed = { raw: text, parseError: true }
+      // Robust JSON extraction: Find the first '{' and last '}'
+      const start = text.indexOf('{')
+      const end = text.lastIndexOf('}')
+      if (start === -1 || end === -1) throw new Error('No JSON object found in response')
+      
+      let clean = text.slice(start, end + 1)
+      
+      // Remove common formatting errors that break JSON.parse
+      // 1. Remove commas in numbers (e.g., 241,919 -> 241919)
+      // This regex looks for a comma between two digits
+      clean = clean.replace(/(\d),(\d)/g, '$1$2')
+      
+      parsed = JSON.parse(clean)
+    } catch (err) {
+      console.error('Parse error:', err.message)
+      parsed = { raw: text, parseError: true, errorMessage: err.message }
     }
 
     return new Response(JSON.stringify(parsed), {
