@@ -119,6 +119,7 @@ export const FINANCING_RATE_ANNUAL = 0.14  // 14% p.a.
  * Calculate annual carbon credit revenue from emission reductions.
  * @param {number} reductionMonthly  tCO2eq/month reduced
  * @param {'conservative'|'mid'|'optimistic'} priceScenario
+ * @param {object} customRates
  * @returns {{ annualTonnes, kes_per_tonne, annual_kes, monthly_kes, usd_price }}
  */
 export function calcCarbonCreditRevenue(reductionMonthly, priceScenario = 'mid', customRates = null) {
@@ -134,11 +135,11 @@ export function calcCarbonCreditRevenue(reductionMonthly, priceScenario = 'mid',
 }
 
 // All three price scenarios at once
-export function calcCarbonCreditAllScenarios(reductionMonthly) {
+export function calcCarbonCreditAllScenarios(reductionMonthly, customRates = null) {
   return {
-    conservative: calcCarbonCreditRevenue(reductionMonthly, 'conservative'),
-    mid:          calcCarbonCreditRevenue(reductionMonthly, 'mid'),
-    optimistic:   calcCarbonCreditRevenue(reductionMonthly, 'optimistic'),
+    conservative: calcCarbonCreditRevenue(reductionMonthly, 'conservative', customRates),
+    mid:          calcCarbonCreditRevenue(reductionMonthly, 'mid', customRates),
+    optimistic:   calcCarbonCreditRevenue(reductionMonthly, 'optimistic', customRates),
   }
 }
 
@@ -153,7 +154,7 @@ export function calcICEFuelCost({ type, kmPerDay, kmPerLitre, fuel }, customRate
   const rates = customRates || MARKET_RATES
   const kpl       = kmPerLitre || rates.ice_kpl_default[type] || 8
   const fuelType  = fuel || rates.ice_fuel_default[type] || 'petrol'
-  const price_kes = rates.fuel_kes_per_litre[fuelType]
+  const price_kes = rates.fuel_kes_per_litre[fuelType] || rates.fuel_kes_per_litre.petrol
   const litresDay = kmPerDay / kpl
   const annual    = Math.round(litresDay * price_kes * rates.working_days_per_year)
   const monthly   = Math.round(annual / 12)
@@ -178,9 +179,9 @@ export function calcEVEnergyCost({ type, kmPerDay }, customRates = null) {
 /**
  * Fuel saving: ICE annual fuel cost minus EV annual electricity cost.
  */
-export function calcFuelSaving(vehicle) {
-  const ice  = calcICEFuelCost(vehicle)
-  const ev   = calcEVEnergyCost(vehicle)
+export function calcFuelSaving(vehicle, customRates = null) {
+  const ice  = calcICEFuelCost(vehicle, customRates)
+  const ev   = calcEVEnergyCost(vehicle, customRates)
   const saving_annual  = ice.annual_kes - ev.annual_kes
   const saving_monthly = Math.round(saving_annual / 12)
   const saving_pct     = Math.round((saving_annual / ice.annual_kes) * 100)
@@ -196,7 +197,7 @@ export function calcFuelSaving(vehicle) {
  * 5-year TCO for ICE and EV variants of a given vehicle type.
  * Includes: purchase, fuel/energy, maintenance, financing cost on EV premium.
  */
-export function calcTCO({ type, kmPerDay, years = 5 }) {
+export function calcTCO({ type, kmPerDay, years = 5 }, customRates = null) {
   const caps  = VEHICLE_CAPITAL[type]
   if (!caps) return null
 
@@ -208,8 +209,8 @@ export function calcTCO({ type, kmPerDay, years = 5 }) {
   const ice_maint_annual = (maint.ice  || 0) * 12
   const ev_maint_annual  = (maint.ev   || 0) * 12
 
-  const ice_fuel = calcICEFuelCost({ type, kmPerDay })
-  const ev_nrg   = ev_available ? calcEVEnergyCost({ type, kmPerDay }) : null
+  const ice_fuel = calcICEFuelCost({ type, kmPerDay }, customRates)
+  const ev_nrg   = ev_available ? calcEVEnergyCost({ type, kmPerDay }, customRates) : null
 
   // EV premium financing — annual interest cost on the difference
   const ev_premium        = ev_purchase - ice_purchase
@@ -267,12 +268,13 @@ export function calcTCO({ type, kmPerDay, years = 5 }) {
  * Aggregate economics for a fleet array.
  * Returns per-scenario financial summary.
  */
-export function calcFleetEconomics(fleet) {
+export function calcFleetEconomics(fleet, customRates = null) {
   if (!fleet || fleet.length === 0) return null
+  const rates = customRates || MARKET_RATES
 
   // Total annual fuel cost (ICE baseline)
   const totalAnnualFuelCost = fleet.reduce((sum, v) => {
-    const fc = calcICEFuelCost({ type: v.type, kmPerDay: v.kmPerDay, kmPerLitre: v.kmPerLitre, fuel: v.fuel })
+    const fc = calcICEFuelCost({ type: v.type, kmPerDay: v.kmPerDay, kmPerLitre: v.kmPerLitre, fuel: v.fuel }, rates)
     return sum + fc.annual_kes
   }, 0)
 
@@ -284,7 +286,7 @@ export function calcFleetEconomics(fleet) {
   const nonEvFleet = fleet.filter(v => !VEHICLE_CAPITAL[v.type]?.ev?.available)
 
   const evFuelSavingAnnual = evFleet.reduce((sum, v) => {
-    const s = calcFuelSaving({ type: v.type, kmPerDay: v.kmPerDay, kmPerLitre: v.kmPerLitre, fuel: v.fuel })
+    const s = calcFuelSaving({ type: v.type, kmPerDay: v.kmPerDay, kmPerLitre: v.kmPerLitre, fuel: v.fuel }, rates)
     return sum + s.saving_annual
   }, 0)
 
@@ -309,7 +311,7 @@ export function calcFleetEconomics(fleet) {
 
   const carbonCredits = {}
   for (const [scenario, reduction] of Object.entries(emReductionScenarios)) {
-    carbonCredits[scenario] = calcCarbonCreditAllScenarios(reduction)
+    carbonCredits[scenario] = calcCarbonCreditAllScenarios(reduction, rates)
   }
 
   // Route consolidation savings (no capital cost)

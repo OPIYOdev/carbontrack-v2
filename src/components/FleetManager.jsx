@@ -22,11 +22,15 @@ export default function FleetManager() {
 
   const filtered = useMemo(() => activeFleet
     .filter((v) => filter === 'all' || v.type === filter)
-    .filter((v) =>
-      !search || v.id.toLowerCase().includes(search.toLowerCase()) ||
-      v.reg.toLowerCase().includes(search.toLowerCase()) ||
-      v.route.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((v) => {
+      if (!search) return true
+      const s = search.toLowerCase()
+      return (
+        String(v.id || '').toLowerCase().includes(s) ||
+        String(v.reg || '').toLowerCase().includes(s) ||
+        String(v.route || '').toLowerCase().includes(s)
+      )
+    })
     .sort((a, b) => (b[sort] || 0) - (a[sort] || 0)), [activeFleet, filter, search, sort])
 
   const totalEm = useMemo(() => filtered.reduce((s, v) => s + (v.emPerMonth || 0), 0), [filtered])
@@ -110,7 +114,7 @@ export default function FleetManager() {
                     <td className="mono" style={{ fontSize: '12px' }}>{v.litresPerDay}</td>
                     <td className="mono" style={{ fontSize: '12px' }}>{v.kmPerLitre}</td>
                     <td className="mono" style={{ fontSize: '12px', fontWeight: 500, color: highEm ? '#A32D2D' : 'var(--text-1)' }}>
-                      {v.emPerMonth.toFixed(3)}
+                      {typeof v.emPerMonth === 'number' ? v.emPerMonth.toFixed(3) : '0.000'}
                     </td>
                     <td style={{ minWidth: '60px' }}>
                       <div style={{ height: '6px', background: 'var(--surface-3)', borderRadius: '3px', overflow: 'hidden' }}>
