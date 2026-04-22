@@ -29,14 +29,14 @@ const HEADER_ALIASES = {
   fuel_type:   ['fuel_type', 'fuel', 'fuel_kind', 'energy_type', 'propulsion'],
   age:         ['age', 'vehicle_age', 'years', 'age_yrs', 'year_of_manufacture', 'yom', 'model_year', 'age_yr'],
   route:       ['route', 'route_name', 'road', 'corridor', 'service_route', 'path', 'primary_route'],
-  seats:       ['seats', 'capacity', 'passengers', 'seating', 'seat_capacity', 'pax'],
+  seats:       ['seats', 'capacity', 'passengers', 'seating', 'seat_capacity', 'pax', 'pax_trip'],
   // Distance / fuel
   km_per_day:  ['km_per_day', 'daily_km', 'km_day', 'distance_per_day', 'daily_distance', 'dist_day', 'kms_per_day', 'kilometres_per_day', 'daily_km_avg'],
   km_per_litre:['km_per_litre', 'efficiency', 'fuel_efficiency', 'kpl', 'mpg', 'km_l', 'kmpl', 'fuel_economy', 'consumption_rate', 'km_litre'],
   litres_per_day:['litres_per_day', 'fuel_litres', 'litres_day', 'litres', 'fuel_consumption', 'daily_fuel', 'ltr_per_day', 'liters_per_day', 'daily_fuel_litres'],
   // PII — will be masked
-  driver:      ['driver', 'driver_name', 'name', 'operator', 'owner', 'assigned_to', 'driver_name_pii'],
-  phone:       ['phone', 'mobile', 'contact', 'telephone', 'cell', 'phone_number', 'driver_phone_pii'],
+  driver:      ['driver', 'driver_name', 'name', 'operator', 'owner', 'assigned_to', 'driver_name_pii', 'owner_name_pii'],
+  phone:       ['phone', 'mobile', 'contact', 'telephone', 'cell', 'phone_number', 'driver_phone_pii', 'owner_phone_pii'],
   id_number:   ['id_number', 'national_id', 'id_no', 'nid', 'passport', 'id_card'],
 }
 
@@ -365,16 +365,27 @@ function validateRow(row, rowNum) {
 const WORKING_DAYS = 25
 
 function normalizeRow(raw, idx) {
-  // Coerce all numeric fields precisely
-  const kmPerDay    = toNumber(raw.km_per_day)
-  const kmPerLitre  = toNumber(raw.km_per_litre)
-  const litresRaw   = toNumber(raw.litres_per_day)
-  const age         = toInt(raw.age)
-  const seats       = toInt(raw.seats)
+  // Helper to get field value by canonical key or any of its aliases
+  const getField = (canonical) => {
+    if (raw[canonical] !== undefined && raw[canonical] !== null) return raw[canonical]
+    const aliases = HEADER_ALIASES[canonical] || []
+    for (const alias of aliases) {
+      const normAlias = normalizeHeader(alias)
+      if (raw[normAlias] !== undefined && raw[normAlias] !== null) return raw[normAlias]
+    }
+    return null
+  }
 
-  const fuelRaw = raw.fuel_type
+  // Coerce all numeric fields precisely
+  const kmPerDay    = toNumber(getField('km_per_day'))
+  const kmPerLitre  = toNumber(getField('km_per_litre'))
+  const litresRaw   = toNumber(getField('litres_per_day'))
+  const age         = toInt(getField('age'))
+  const seats       = toInt(getField('seats'))
+
+  const fuelRaw = getField('fuel_type')
   const fuel    = normalizeFuel(fuelRaw)
-  const type    = normalizeType(raw.vehicle_type)
+  const type    = normalizeType(getField('vehicle_type'))
 
   // Litres per day: use explicit value if present, else derive from km ÷ efficiency
   // Use an efficiency default based on vehicle type if km_per_litre is missing
@@ -386,8 +397,8 @@ function normalizeRow(raw, idx) {
     ? calcEmission(litresPerDay, fuel, WORKING_DAYS)
     : { emPerDay: 0, emPerMonth: 0, emPerYear: 0 }
 
-  const id  = toString(raw.id)  || toString(raw.reg) || `U${String(idx + 1).padStart(3, '0')}`
-  const reg = toString(raw.reg) || toString(raw.id)  || `UPLOAD-${idx + 1}`
+  const id  = toString(getField('id'))  || toString(getField('reg')) || `U${String(idx + 1).padStart(3, '0')}`
+  const reg = toString(getField('reg')) || toString(getField('id'))  || `UPLOAD-${idx + 1}`
 
   return {
     id,
@@ -396,7 +407,7 @@ function normalizeRow(raw, idx) {
     fuel,
     fuelRaw: toString(fuelRaw),   // preserved for audit
     age:          age  ?? 0,
-    route:        toString(raw.route) || 'Unknown',
+    route:        toString(getField('route')) || 'Unknown',
     seats:        seats ?? 5,
     kmPerDay:     kmPerDay  ?? 0,
     kmPerLitre:   Math.round((kpl) * 10) / 10,
@@ -405,9 +416,9 @@ function normalizeRow(raw, idx) {
     emPerMonth,
     emPerYear,
     // Preserved from raw for driver/phone masking display
-    driver:    toString(raw.driver),
-    phone:     toString(raw.phone),
-    id_number: toString(raw.id_number),
+    driver:    toString(getField('driver')),
+    phone:     toString(getField('phone')),
+    id_number: toString(getField('id_number')),
     // Provenance
     sourceFile:  null,  // set by caller
     uploadedAt:  new Date().toISOString(),
@@ -545,64 +556,30 @@ export function getTemplateXLSX() {
     ['V003', 'KCA789GH', 'county-car', 'petrol', 3,  'County HQ-Nakuru', 80,  11,  5,  '',           ''],
     ['V004', 'KDA012IJ', 'boda-boda',  'petrol', 2,  'CBD Last-Mile',    90,  33,  1,  '',           ''],
     ['V005', 'KEB345KL', 'bus',        'diesel', 7,  'Nairobi-Kisumu',   350, 5.1, 50, '',           ''],
-    ['V006', 'KFC678MN', 'matatu',     'diesel', 9,  'Thika Superhwy',   150, 7.8, 14, 'Jane Smith', '+254711223344'],
-    ['V007', 'KGD901OP', 'lorry',      'diesel', 12, 'Northern Bypass',  220, 3.9, 2,  '',           ''],
+    ['V006', 'KFC678MN', 'matatu',     'diesel', 9,  'Thika Road',       150, 8.2, 14, '',           ''],
   ]
 
   const wsFleet = XLSX.utils.aoa_to_sheet(fleetData)
-
-  // Column widths
-  wsFleet['!cols'] = [
-    { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 6 },
-    { wch: 22 }, { wch: 12 }, { wch: 14 }, { wch: 7 }, { wch: 14 }, { wch: 16 },
-  ]
-
-  // Bold the header row (row 3, 0-indexed row 2)
-  const headerRowIdx = 2
-  const headerKeys = ['id','reg','vehicle_type','fuel_type','age','route','km_per_day','km_per_litre','seats','driver','phone']
-  headerKeys.forEach((_, c) => {
-    const addr = XLSX.utils.encode_cell({ r: headerRowIdx, c })
-    if (wsFleet[addr]) wsFleet[addr].s = { font: { bold: true } }
-  })
-
   XLSX.utils.book_append_sheet(wb, wsFleet, 'Fleet Data')
 
   // ── Sheet 2: Reference ──
   const refData = [
-    ['Vehicle Type Reference'],
+    ['Reference: Emission Factors (IPCC 2006 Tier 1)'],
+    ['Fuel Type', 'tCO2eq / Litre'],
+    ['petrol', 0.00231],
+    ['diesel', 0.00268],
+    ['cng', 0.00202],
     [],
-    ['Type Code',       'Description',             'Default km/L', 'Fuel'],
-    ['matatu',          '14-seater minibus',        8.5,            'petrol'],
-    ['lorry',           'Heavy goods vehicle',      4.0,            'diesel'],
-    ['county-car',      'Government/admin car',     11.0,           'petrol'],
-    ['boda-boda',       'Motorcycle taxi',          33.0,           'petrol'],
-    ['bus',             'Long-distance bus',        5.0,            'diesel'],
-    [],
-    ['Fuel Type Reference'],
-    [],
-    ['Fuel Code',  'IPCC Emission Factor (tCO₂eq/L)', 'Source'],
-    ['petrol',     0.00231,                            'IPCC 2006 Table 3.2.1'],
-    ['diesel',     0.00268,                            'IPCC 2006 Table 3.2.1'],
-    ['cng',        0.00202,                            'IPCC 2006 Table 3.2.1'],
-    ['electric',   0.00030,                            'EPRA Grid Intensity 2022 (tCO₂eq/kWh equiv)'],
-    [],
-    ['Accepted Column Name Aliases'],
-    [],
-    ['Canonical Column', 'Also Accepted As'],
-    ['km_per_day',   'daily_km, km_day, distance_per_day, daily_distance'],
-    ['km_per_litre', 'efficiency, kpl, kmpl, fuel_efficiency, fuel_economy'],
-    ['litres_per_day','fuel_litres, litres, daily_fuel, ltr_per_day'],
-    ['vehicle_type', 'type, category, class, fleet_type'],
-    ['fuel_type',    'fuel, fuel_kind, energy_type, propulsion'],
-    ['reg',          'registration, plate, number_plate, reg_no'],
-    ['age',          'vehicle_age, years, year_of_manufacture, yom'],
+    ['Reference: Accepted Column Aliases'],
+    ['Canonical Field', 'Accepted Aliases (comma separated)'],
+    ['km_per_day', 'daily_km, km_day, distance_per_day, daily_distance, daily_km_avg'],
+    ['km_per_litre', 'efficiency, kpl, kmpl, fuel_efficiency, km_litre'],
+    ['fuel_type', 'fuel, fuel_kind, energy_type, propulsion'],
+    ['vehicle_type', 'type, category, veh_type, class'],
+    ['reg', 'registration, plate, number_plate, reg_no, reg_plate'],
   ]
-
   const wsRef = XLSX.utils.aoa_to_sheet(refData)
-  wsRef['!cols'] = [{ wch: 20 }, { wch: 42 }, { wch: 16 }, { wch: 12 }]
   XLSX.utils.book_append_sheet(wb, wsRef, 'Reference')
 
-  // Write to array buffer
-  const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx', compression: true })
-  return new Uint8Array(buf)
+  return XLSX.write(wb, { type: 'array', bookType: 'xlsx' })
 }
