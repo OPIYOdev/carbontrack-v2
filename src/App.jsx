@@ -7,12 +7,13 @@ import FleetManager from './components/FleetManager'
 import Calculator from './components/Calculator'
 import DataIntake from './components/DataIntake'
 import AIAnalyst from './components/AIAnalyst'
-import ScenarioModeler from './components/ScenarioModelerimport AuditTrail from './components/AuditTrail'
+import ScenarioModeler from './components/ScenarioModeler'
 import PolicyReport from './components/PolicyReport'
 import Settings from './components/Settings'
 import KenyaComplianceCalculator from './components/KenyaComplianceCalculator'
 import ActionWorkflow from './components/ActionWorkflow'
 import AuditTrail from './components/AuditTrail'
+import Economics from './components/Economics'
 
 const ALL_TABS = {
   overview:   { label: 'Overview',      component: Overview },
